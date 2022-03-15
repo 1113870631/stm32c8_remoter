@@ -540,13 +540,6 @@ static int check_halport(hal_nrf24_port_t halport)
 
     tmp = NRF24CMD_R_REG | NRF24REG_RX_ADDR_P1;
     halport->ops->send_then_recv(halport, &tmp, 1, backup_addr, 5);
-    for(int i=0;i<5;i++)
-    {
-       //LOG_I("%d\n",backup_addr[i]);
-    };
-
-
-
 
     tmp = NRF24CMD_W_REG | NRF24REG_RX_ADDR_P1;
     halport->ops->send_then_send(halport, &tmp, 1, addr, 5);
@@ -555,10 +548,6 @@ static int check_halport(hal_nrf24_port_t halport)
 
     tmp = NRF24CMD_R_REG | NRF24REG_RX_ADDR_P1;
     halport->ops->send_then_recv(halport, &tmp, 1, addr, 5);
-    for(int i=0;i<5;i++)
-    {
-       LOG_I("%d\n",addr[i]);
-    };
 
     for (int i = 0; i < 5; i++)
     {

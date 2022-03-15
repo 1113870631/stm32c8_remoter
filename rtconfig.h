@@ -213,6 +213,9 @@
 #define PKG_NRF24L01_DEMO_CE_PIN 3
 #define PKG_NRF24L01_DEMO_IRQ_PIN 2
 #define PKG_NRF24L01_DEMO_INTERVAL_SEND 500
+#define PKG_NRF24L01_ENABLING_DEBUG
+#define PKG_NRF24L01_USING_INFO_REPORT
+#define PKG_NRF24L01_USING_SHELL_CMD
 /* end of peripheral libraries and drivers */
 
 /* AI packages */

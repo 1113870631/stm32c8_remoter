@@ -2,6 +2,12 @@
 #include <rtconfig.h>
 #include "board.h"
 #include "stm32f1xx_hal_gpio.h"
+
+extern char  command_dir_pool[4];
+extern char  command_move_pool[4];
+extern rt_sem_t nrf_sem;
+char send_pool[8]={'0'};
+
 #if (PKG_NRF24L01_DEMO_CE_PIN < 0)
 #error Please specify a valid pin
 #endif
@@ -49,9 +55,34 @@ static void tx_done(nrf24_t nrf24, int pipe)
     }
 
     rt_kprintf(" (pipe%d)\n", pipe);
-    
-    rt_sprintf(tbuf, "My role is %s [%dth]\n", ROLE_TABLE[nrf24->cfg.role], cnt);
-    nrf24_send_data(nrf24, (uint8_t *)tbuf, rt_strlen(tbuf), pipe);
+
+    //获取信号量发送命令
+    rt_err_t result;
+    result=rt_sem_take  (nrf_sem,RT_WAITING_FOREVER);
+    if (result != RT_EOK)
+            {
+                rt_kprintf(" take a nrf dynamic semaphore, failed.\n");
+                //rt_sem_delete(dynamic_sem);
+                return;
+            }
+            else
+            {
+                //rt_kprintf(" take a nrf dynamic semaphore\n");
+                //发送控制命令
+                for(int i=0;i<4;i++)
+                    {
+                        send_pool[i]=command_dir_pool[i];
+                        send_pool[i+4]=command_move_pool[i];
+
+                    }
+                //rt_kprintf(send_pool);
+                //rt_kprintf("\n");
+                nrf24_send_data(nrf24, (uint8_t *)send_pool, rt_strlen(send_pool), pipe);
+            }
+
+
+
+
 #ifdef PKG_NRF24L01_DEMO_ROLE_PTX
     rt_thread_mdelay(NRF24_DEMO_SEND_INTERVAL);
 #endif
@@ -78,8 +109,8 @@ static void thread_entry(void *param)
     {
         rt_kprintf("[nrf24/demo] running.");
     }
-
-    nrf24_send_data(nrf24, "Hi\n", 3, NRF24_DEFAULT_PIPE);
+    //发送第一个数据
+    nrf24_send_data(nrf24, (uint8_t *)send_pool, rt_strlen(send_pool), NRF24_DEFAULT_PIPE);
 
     while (1)
     {
