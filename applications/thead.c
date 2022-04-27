@@ -20,6 +20,8 @@ double speed_float=0.2;
 double dir_float=0.5;
 
 
+
+#define ERR_PIN_NUM  GET_PIN(C, 13)
 #define THREAD_PRIORITY 25
 #define THREAD_STACK_SIZE 512
 #define THREAD_TIMESLICE 5
@@ -47,6 +49,31 @@ double C3_mid_v=0;
 extern rt_sem_t nrf_sem;
 char  command_dir_pool[4];
 char  command_move_pool[4];
+
+double dir_err_num=3;
+rt_tick_t err_key_status=0;
+
+void err(void *args){
+    //rt_kprintf("err\n");
+    if(err_key_status==0){
+        err_key_status=rt_tick_get();
+    }
+    //err_key_status=rt_tick_get();
+    rt_tick_t tmp_tick=rt_tick_get();
+    rt_tick_t tmp=tmp_tick-err_key_status;
+    if(tmp<500&&tmp>0){
+        dir_err_num--;
+        rt_kprintf("err--\n");
+    }
+    else if(tmp>500){
+        dir_err_num++;
+        rt_kprintf("err++\n");
+    }
+    rt_kprintf("%d\n",(int)dir_err_num);
+    err_key_status=tmp_tick;
+
+
+}
 //读取电压函数
 double get_ADC_V(rt_adc_device_t adc_dev,int ADC_DEV_CHANNEL)
 {
@@ -64,13 +91,17 @@ static void thread1_entry(void *parameter) {
             rt_adc_device_t adc_dev;
             //rt_uint32_t value, vol;
             rt_err_t ret = RT_EOK;
-            rt_pin_mode(LEDR_PIN,  PIN_MODE_OUTPUT);
-            rt_pin_mode(LEDG_PIN,  PIN_MODE_OUTPUT);
-            rt_pin_mode(LEDB_PIN,  PIN_MODE_OUTPUT);
-            rt_pin_write(LEDR_PIN, PIN_LOW);//亮红灯
-            rt_pin_write(LEDG_PIN, PIN_HIGH);
-            rt_pin_write(LEDB_PIN, PIN_HIGH);
+           // rt_pin_mode(LEDR_PIN,  PIN_MODE_OUTPUT);
+            //rt_pin_mode(LEDG_PIN,  PIN_MODE_OUTPUT);
+            //rt_pin_mode(LEDB_PIN,  PIN_MODE_OUTPUT);
+            //rt_pin_write(LEDR_PIN, PIN_LOW);//亮红灯
+            //rt_pin_write(LEDG_PIN, PIN_HIGH);
+            //rt_pin_write(LEDB_PIN, PIN_HIGH);
 
+            rt_pin_mode(ERR_PIN_NUM, PIN_MODE_INPUT);
+            rt_pin_write(ERR_PIN_NUM, PIN_LOW);
+            rt_pin_attach_irq(ERR_PIN_NUM, PIN_IRQ_MODE_RISING, err, RT_NULL);
+            rt_pin_irq_enable(ERR_PIN_NUM , ENABLE);
 
             /* 查 找 ADC设 备 */
             adc_dev = (rt_adc_device_t)rt_device_find(ADC_DEV_NAME);
@@ -91,11 +122,11 @@ static void thread1_entry(void *parameter) {
 
             double tmp=get_ADC_V(adc_dev, ADC_DEV_CHANNEL_C2);
             //电压小于3.1 堵塞
-            while(get_ADC_V(adc_dev, ADC_DEV_CHANNEL_C2)<3.1){
-                rt_pin_write(LEDG_PIN, PIN_LOW);//亮绿灯
+            while(get_ADC_V(adc_dev, ADC_DEV_CHANNEL_C2)<2.9){
+                //rt_pin_write(LEDG_PIN, PIN_LOW);//亮绿灯
             };
-            rt_pin_write(LEDG_PIN, PIN_HIGH);//灭绿灯
-            rt_pin_write(LEDB_PIN, PIN_LOW);//亮蓝灯
+            //rt_pin_write(LEDG_PIN, PIN_HIGH);//灭绿灯
+            //rt_pin_write(LEDB_PIN, PIN_LOW);//亮蓝灯
             rt_thread_mdelay(500);
             for(int i=0;i<10;i++)
              {
@@ -111,10 +142,10 @@ static void thread1_entry(void *parameter) {
             rt_thread_delay(1000);
              while(get_ADC_V(adc_dev, ADC_DEV_CHANNEL_C2)>1)
                  {
-                 rt_pin_write(LEDG_PIN, PIN_LOW);//亮绿灯
+                 //rt_pin_write(LEDG_PIN, PIN_LOW);//亮绿灯
                  };//电压大于1 堵塞
-             rt_pin_write(LEDG_PIN, PIN_HIGH);//灭绿灯
-              rt_pin_write(LEDB_PIN, PIN_LOW);//亮蓝灯
+             //rt_pin_write(LEDG_PIN, PIN_HIGH);//灭绿灯
+              //rt_pin_write(LEDB_PIN, PIN_LOW);//亮蓝灯
              rt_thread_mdelay(500);
              for(int i=0;i<10;i++)
              {
@@ -132,10 +163,10 @@ static void thread1_entry(void *parameter) {
              rt_thread_mdelay(50);
              while(get_ADC_V(adc_dev, ADC_DEV_CHANNEL_C3)<3.1)
                  {
-                 rt_pin_write(LEDG_PIN, PIN_LOW);//亮绿灯
+                 //rt_pin_write(LEDG_PIN, PIN_LOW);//亮绿灯
                  };//电压小于3.1 堵塞
-             rt_pin_write(LEDG_PIN, PIN_HIGH);//灭绿灯
-             rt_pin_write(LEDB_PIN, PIN_LOW);//亮蓝灯
+             //rt_pin_write(LEDG_PIN, PIN_HIGH);//灭绿灯
+             //rt_pin_write(LEDB_PIN, PIN_LOW);//亮蓝灯
              rt_thread_mdelay(500);
              for(int i=0;i<10;i++)
               {
@@ -150,10 +181,10 @@ static void thread1_entry(void *parameter) {
              rt_kprintf("请移动到最左\n");
              rt_thread_delay(50);
               while(get_ADC_V(adc_dev, ADC_DEV_CHANNEL_C3)>0.5){
-                  rt_pin_write(LEDG_PIN, PIN_LOW);//亮绿灯
+                  //rt_pin_write(LEDG_PIN, PIN_LOW);//亮绿灯
               };//电压大于0.5 堵塞
-              rt_pin_write(LEDG_PIN, PIN_HIGH);//灭绿灯
-              rt_pin_write(LEDB_PIN, PIN_LOW);//亮蓝灯
+              //rt_pin_write(LEDG_PIN, PIN_HIGH);//灭绿灯
+              //rt_pin_write(LEDB_PIN, PIN_LOW);//亮蓝灯
               rt_thread_mdelay(500);
               for(int i=0;i<10;i++)
               {
@@ -163,7 +194,7 @@ static void thread1_entry(void *parameter) {
                  rt_kprintf("第%d次数据采集成功\n",i);
               }
               rt_kprintf("请松开摇杆\n");
-              rt_pin_write(LEDG_PIN, PIN_LOW);//亮绿灯
+              //rt_pin_write(LEDG_PIN, PIN_LOW);//亮绿灯
               rt_thread_mdelay(1000);
               //采集中位数
               for(int i=0;i<3;i++)
@@ -187,7 +218,7 @@ static void thread1_entry(void *parameter) {
               C3_mid_v=C3_mid_v/3;
               rt_kprintf("结果为%f\n",C2_mid_v);
               rt_kprintf("结果为%f\n",C3_mid_v);
-              rt_pin_write(LEDG_PIN, PIN_HIGH);//亮绿灯
+              //rt_pin_write(LEDG_PIN, PIN_HIGH);//亮绿灯
               rt_thread_mdelay(1000);
               C3_max_v=C3_max_v/10;
               C3_min_v=C3_min_v/10;
@@ -243,18 +274,18 @@ static void thread1_entry(void *parameter) {
                                     if(dir_v-C3_mid_v>dir_float){//超出合理间隙范围
                                         double tmp=dir_v-C3_mid_v;
                                         tmp=tmp/(C3_max_v-C3_mid_v);
-                                        dir=tmp*20+50;
+                                        dir=tmp*20+50+dir_err_num;
                                     }else{//未超出合理间隙范围
-                                        dir=50;
+                                        dir=50+dir_err_num;
                                     }
                                 }else{//左转电压  C3_mid_v  >   dir_v
                                     if(C2_mid_v-dir_v>dir_float){//超出合理间隙范围
                                         double tmp=C3_mid_v-dir_v;
                                         tmp=tmp/(C3_max_v-C3_mid_v);
-                                        dir=50-tmp*20;
+                                        dir=50-tmp*20+dir_err_num;
                                          }
                                     else{//未超出合理间隙范围
-                                           dir=50;
+                                           dir=50+dir_err_num;
                                          }
                                 }
                                  //rt_kprintf("dir:%d\n",dir);

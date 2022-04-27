@@ -67,7 +67,7 @@ RT_WEAK void rt_hw_board_init()
       GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
       HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-
+      __HAL_RCC_GPIOC_CLK_ENABLE();
 
 
 }
