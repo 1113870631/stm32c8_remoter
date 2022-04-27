@@ -55,7 +55,7 @@ rt_tick_t err_key_status=0;
 
 void err(void *args){
     //rt_kprintf("err\n");
-    if(err_key_status==0){
+    if(err_key_status==3){
         err_key_status=rt_tick_get();
     }
     //err_key_status=rt_tick_get();
